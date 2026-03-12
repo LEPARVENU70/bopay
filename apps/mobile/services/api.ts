@@ -68,3 +68,9 @@ export const paymentsApi = {
   sendInvoice: (paymentId: string, email: string) =>
     api.post<{ success: boolean; email: string }>(`/payments/${paymentId}/send-invoice`, { email }),
 };
+
+// Customers
+export const customersApi = {
+  list: (page = 1) => api.get<any>(`/customers?page=${page}`),
+  get: (id: string) => api.get<any>(`/customers/${id}`),
+};

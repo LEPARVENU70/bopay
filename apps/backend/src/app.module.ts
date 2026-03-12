@@ -6,6 +6,7 @@ import { MerchantsModule } from './merchants/merchants.module';
 import { PaymentsModule } from './payments/payments.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { InvoicesModule } from './invoices/invoices.module';
+import { CustomersModule } from './customers/customers.module';
 import { HealthController } from './health.controller';
 import { Merchant } from './database/entities/merchant.entity';
 import { MerchantUser } from './database/entities/merchant-user.entity';
@@ -34,6 +35,7 @@ import { Device } from './database/entities/device.entity';
     PaymentsModule,
     WebhooksModule,
     InvoicesModule,
+    CustomersModule,
   ],
 })
 export class AppModule {}
