@@ -1,0 +1,22 @@
+{
+  "name": "bopay",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "pnpm --filter @bopay/backend dev",
+    "dev:mobile": "pnpm --filter @bopay/mobile start",
+    "build:backend": "pnpm --filter @bopay/backend build",
+    "db:migrate": "pnpm --filter @bopay/backend migration:run",
+    "db:seed": "pnpm --filter @bopay/backend seed"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "overrides": {
+      "metro-runtime": "0.81.5"
+    }
+  }
+}
