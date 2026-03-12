@@ -64,4 +64,7 @@ export const paymentsApi = {
   list: (page = 1) => api.get<any>(`/payments?page=${page}`),
 
   get: (id: string) => api.get<any>(`/payments/${id}`),
+
+  sendInvoice: (paymentId: string, email: string) =>
+    api.post<{ success: boolean; email: string }>(`/payments/${paymentId}/send-invoice`, { email }),
 };

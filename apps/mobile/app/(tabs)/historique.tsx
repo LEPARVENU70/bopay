@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  RefreshControl, SafeAreaView
+  RefreshControl, SafeAreaView, Alert, TextInput, Modal, ActivityIndicator
 } from 'react-native';
 import { paymentsApi } from '../../services/api';
 
@@ -17,6 +17,9 @@ export default function HistoriqueScreen() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [invoiceModal, setInvoiceModal] = useState<{ visible: boolean; paymentId: string } | null>(null);
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
 
   const load = async (p = 1) => {
     try {
@@ -32,6 +35,21 @@ export default function HistoriqueScreen() {
 
   useEffect(() => { load(); }, []);
 
+  const handleSendInvoice = async () => {
+    if (!email.trim() || !invoiceModal) return;
+    setSending(true);
+    try {
+      await paymentsApi.sendInvoice(invoiceModal.paymentId, email.trim());
+      setInvoiceModal(null);
+      setEmail('');
+      Alert.alert('Reçu envoyé', `Le reçu a été envoyé à ${email.trim()}`);
+    } catch (e: any) {
+      Alert.alert('Erreur', e.message || 'Impossible d\'envoyer le reçu');
+    } finally {
+      setSending(false);
+    }
+  };
+
   const totalToday = payments
     .filter(p => {
       const d = new Date(p.createdAt);
@@ -43,6 +61,33 @@ export default function HistoriqueScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>Historique</Text>
+
+      <Modal visible={!!invoiceModal?.visible} transparent animationType="fade" onRequestClose={() => setInvoiceModal(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Envoyer le reçu</Text>
+            <Text style={styles.modalSub}>Entrez l'email du client</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="client@exemple.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, (!email.trim() || sending) && { opacity: 0.5 }]}
+              onPress={handleSendInvoice}
+              disabled={!email.trim() || sending}
+            >
+              {sending ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendBtnText}>Envoyer</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setInvoiceModal(null); setEmail(''); }}>
+              <Text style={styles.cancelText}>Annuler</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.todayCard}>
         <Text style={styles.todayLabel}>Encaissé aujourd'hui</Text>
@@ -67,9 +112,19 @@ export default function HistoriqueScreen() {
                   {date.toLocaleDateString('fr-FR')} {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
+              <View style={styles.rowRight}>
               <View style={[styles.statusBadge, { backgroundColor: status.color + '20' }]}>
                 <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
               </View>
+              {item.status === 'succeeded' && (
+                <TouchableOpacity
+                  style={styles.receiptBtn}
+                  onPress={() => { setEmail(''); setInvoiceModal({ visible: true, paymentId: item.id }); }}
+                >
+                  <Text style={styles.receiptBtnText}>Reçu</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             </View>
           );
         }}
@@ -99,7 +154,21 @@ const styles = StyleSheet.create({
   rowAmount: { fontSize: 18, fontWeight: '700', color: '#111' },
   rowDesc: { fontSize: 13, color: '#666', marginTop: 2 },
   rowDate: { fontSize: 12, color: '#aaa', marginTop: 2 },
+  rowRight: { alignItems: 'flex-end', gap: 8 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   statusText: { fontSize: 12, fontWeight: '600' },
+  receiptBtn: { backgroundColor: '#6C47FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  receiptBtnText: { color: '#fff', fontSize: 11, fontWeight: '600' },
   empty: { textAlign: 'center', color: '#aaa', marginTop: 48, fontSize: 15 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalBox: { backgroundColor: '#fff', borderRadius: 20, padding: 28, width: '85%', alignItems: 'center' },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#111', marginBottom: 4 },
+  modalSub: { fontSize: 14, color: '#666', marginBottom: 20 },
+  input: {
+    width: '100%', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12,
+    padding: 14, fontSize: 15, marginBottom: 16, color: '#111',
+  },
+  sendBtn: { backgroundColor: '#6C47FF', borderRadius: 12, paddingVertical: 14, width: '100%', alignItems: 'center', marginBottom: 12 },
+  sendBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  cancelText: { color: '#888', fontSize: 14 },
 });
