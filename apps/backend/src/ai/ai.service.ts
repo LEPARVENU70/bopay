@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, Not, IsNull } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { Payment, PaymentStatus } from '../database/entities/payment.entity';
@@ -58,35 +58,42 @@ DONNÉES EN TEMPS RÉEL :
     startOfWeek.setHours(0, 0, 0, 0);
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [merchant, todayPayments, weekPayments, monthPayments, allPayments, customers, topCustomers, recent] = await Promise.all([
+    const [merchant, aggRaw, customers, topCustomers, recent] = await Promise.all([
       this.merchantsRepo.findOne({ where: { id: merchantId } }),
-      this.paymentsRepo.find({ where: { merchantId, status: PaymentStatus.SUCCEEDED, createdAt: Between(startOfDay, now) } }),
-      this.paymentsRepo.find({ where: { merchantId, status: PaymentStatus.SUCCEEDED, createdAt: Between(startOfWeek, now) } }),
-      this.paymentsRepo.find({ where: { merchantId, status: PaymentStatus.SUCCEEDED, createdAt: Between(startOfMonth, now) } }),
-      this.paymentsRepo.find({ where: { merchantId } }),
+      this.paymentsRepo.query(`
+        SELECT
+          COALESCE(SUM(CASE WHEN created_at >= $2 AND status = 'succeeded' THEN amount END), 0) AS today_amount,
+          COUNT(CASE WHEN created_at >= $2 AND status = 'succeeded' THEN 1 END) AS today_count,
+          COALESCE(SUM(CASE WHEN created_at >= $3 AND status = 'succeeded' THEN amount END), 0) AS week_amount,
+          COALESCE(SUM(CASE WHEN created_at >= $4 AND status = 'succeeded' THEN amount END), 0) AS month_amount,
+          COALESCE(AVG(CASE WHEN status = 'succeeded' THEN amount END), 0) AS average,
+          COUNT(CASE WHEN status = 'succeeded' THEN 1 END) AS succeeded_count,
+          COUNT(CASE WHEN status = 'failed' THEN 1 END) AS failed_count
+        FROM payments WHERE merchant_id = $1
+      `, [merchantId, startOfDay, startOfWeek, startOfMonth]),
       this.customersRepo.count({ where: { merchantId } }),
       this.customersRepo.find({ where: { merchantId }, order: { totalSpent: 'DESC' }, take: 3 }),
       this.paymentsRepo.find({ where: { merchantId, status: PaymentStatus.SUCCEEDED }, order: { createdAt: 'DESC' }, take: 5 }),
     ]);
 
-    const sum = (arr: Payment[]) => arr.reduce((s, p) => s + Number(p.amount), 0);
-    const succeeded = allPayments.filter(p => p.status === PaymentStatus.SUCCEEDED);
-    const failed = allPayments.filter(p => p.status === PaymentStatus.FAILED);
-    const total = succeeded.length + failed.length;
+    const agg = aggRaw[0];
+    const succeededCount = Number(agg.succeeded_count);
+    const failedCount = Number(agg.failed_count);
+    const total = succeededCount + failedCount;
 
     return {
       businessName: merchant?.businessName || 'votre commerce',
-      today: sum(todayPayments),
-      todayCount: todayPayments.length,
-      week: sum(weekPayments),
-      month: sum(monthPayments),
-      average: succeeded.length ? Math.round(sum(succeeded) / succeeded.length) : 0,
-      successRate: total ? Math.round((succeeded.length / total) * 100) : 100,
+      today: Number(agg.today_amount),
+      todayCount: Number(agg.today_count),
+      week: Number(agg.week_amount),
+      month: Number(agg.month_amount),
+      average: Math.round(Number(agg.average)),
+      successRate: total ? Math.round((succeededCount / total) * 100) : 100,
       totalCustomers: customers,
-      recentPayments: recent.map(p =>
+      recentPayments: recent.map((p: Payment) =>
         `${(Number(p.amount) / 100).toFixed(2)}€ (${new Date(p.createdAt).toLocaleDateString('fr-FR')}${p.description ? ' - ' + p.description : ''})`
       ).join(', ') || 'aucun',
-      topCustomers: topCustomers.map(c =>
+      topCustomers: topCustomers.map((c: Customer) =>
         `${c.firstName || c.email || 'anonyme'} (${(Number(c.totalSpent) / 100).toFixed(2)}€, ${c.totalVisits} visites)`
       ).join(', ') || 'aucun',
     };
