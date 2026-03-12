@@ -74,3 +74,8 @@ export const customersApi = {
   list: (page = 1) => api.get<any>(`/customers?page=${page}`),
   get: (id: string) => api.get<any>(`/customers/${id}`),
 };
+
+// Stats
+export const statsApi = {
+  get: () => api.get<any>('/stats'),
+};
