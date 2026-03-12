@@ -79,3 +79,8 @@ export const customersApi = {
 export const statsApi = {
   get: () => api.get<any>('/stats'),
 };
+
+// AI
+export const aiApi = {
+  chat: (message: string) => api.post<{ reply: string }>('/ai/chat', { message }),
+};

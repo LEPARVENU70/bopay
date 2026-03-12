@@ -8,6 +8,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { CustomersModule } from './customers/customers.module';
 import { StatsModule } from './stats/stats.module';
+import { AiModule } from './ai/ai.module';
 import { HealthController } from './health.controller';
 import { Merchant } from './database/entities/merchant.entity';
 import { MerchantUser } from './database/entities/merchant-user.entity';
@@ -38,6 +39,7 @@ import { Device } from './database/entities/device.entity';
     InvoicesModule,
     CustomersModule,
     StatsModule,
+    AiModule,
   ],
 })
 export class AppModule {}
