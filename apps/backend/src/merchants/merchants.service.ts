@@ -54,24 +54,34 @@ export class MerchantsService {
     }
 
     // Create Stripe Connect account
-    const account = await this.stripe.accounts.create({
-      type: 'express',
-      country: merchant.country,
-      email: merchant.email,
-      business_type: 'individual',
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      metadata: { merchantId: merchant.id },
-    });
+    let account: Stripe.Account;
+    try {
+      account = await this.stripe.accounts.create({
+        type: 'express',
+        country: merchant.country || 'FR',
+        email: dto.email || merchant.email,
+        business_type: 'individual',
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        metadata: { merchantId: merchant.id },
+      });
+    } catch (e: any) {
+      throw new BadRequestException(`Stripe account creation failed: ${e.message}`);
+    }
 
-    const onboardingLink = await this.stripe.accountLinks.create({
-      account: account.id,
-      refresh_url: `${this.config.get('APP_URL')}/onboarding/refresh`,
-      return_url: `${this.config.get('APP_URL')}/onboarding/complete`,
-      type: 'account_onboarding',
-    });
+    let onboardingLink: Stripe.AccountLink;
+    try {
+      onboardingLink = await this.stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: `${this.config.get('APP_URL')}/onboarding/refresh`,
+        return_url: `${this.config.get('APP_URL')}/onboarding/complete`,
+        type: 'account_onboarding',
+      });
+    } catch (e: any) {
+      throw new BadRequestException(`Stripe onboarding link failed: ${e.message}`);
+    }
 
     merchant.stripeAccountId = account.id;
     merchant.stripeOnboardingUrl = onboardingLink.url;
