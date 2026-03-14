@@ -67,34 +67,40 @@ export default function ProfilScreen() {
         <Text style={styles.email}>{user?.email}</Text>
       </View>
 
-      {merchant && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Commerce</Text>
-          <View style={styles.item}>
-            <Text style={styles.itemLabel}>Nom</Text>
-            <Text style={styles.itemValue}>{merchant.businessName}</Text>
-          </View>
-          <View style={styles.item}>
-            <Text style={styles.itemLabel}>Statut Stripe</Text>
-            <View style={styles.itemRight}>
-              <Text style={[styles.itemValue, { color: stripeLabel.color }]}>{stripeLabel.text}</Text>
-              {loadingStripe
-                ? <ActivityIndicator size="small" color="#6C47FF" style={{ marginLeft: 8 }} />
-                : <TouchableOpacity onPress={checkStripeStatus} style={styles.refreshBtn}>
-                    <Text style={styles.refreshText}>↻</Text>
-                  </TouchableOpacity>
-              }
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Commerce</Text>
+        {merchant ? (
+          <>
+            <View style={styles.item}>
+              <Text style={styles.itemLabel}>Nom</Text>
+              <Text style={styles.itemValue}>{merchant.businessName}</Text>
             </View>
-          </View>
-          {!stripeStatus?.onboardingComplete && (
-            <TouchableOpacity style={styles.stripeBtn} onPress={openOnboarding}>
-              <Text style={styles.stripeBtnText}>
-                {merchant?.stripeAccountId ? 'Continuer la vérification Stripe →' : 'Configurer Stripe →'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+            <View style={styles.item}>
+              <Text style={styles.itemLabel}>Statut Stripe</Text>
+              <View style={styles.itemRight}>
+                <Text style={[styles.itemValue, { color: stripeLabel.color }]}>{stripeLabel.text}</Text>
+                {loadingStripe
+                  ? <ActivityIndicator size="small" color="#6C47FF" style={{ marginLeft: 8 }} />
+                  : <TouchableOpacity onPress={checkStripeStatus} style={styles.refreshBtn}>
+                      <Text style={styles.refreshText}>↻</Text>
+                    </TouchableOpacity>
+                }
+              </View>
+            </View>
+            {!stripeStatus?.onboardingComplete && (
+              <TouchableOpacity style={styles.stripeBtn} onPress={openOnboarding}>
+                <Text style={styles.stripeBtnText}>
+                  {merchant?.stripeAccountId ? 'Continuer la vérification Stripe →' : 'Configurer Stripe →'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </>
+        ) : (
+          <TouchableOpacity style={styles.stripeBtn} onPress={() => router.push('/auth/onboarding')}>
+            <Text style={styles.stripeBtnText}>Configurer votre commerce →</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Text style={styles.logoutText}>Déconnexion</Text>
