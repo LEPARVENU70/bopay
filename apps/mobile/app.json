@@ -17,11 +17,10 @@
       "supportsTablet": false,
       "bundleIdentifier": "fr.bopay.app",
       "infoPlist": {
-        "NFCReaderUsageDescription": "Bopay utilise le NFC pour accepter les paiements sans contact."
+        "NFCReaderUsageDescription": "Bopay utilise le NFC pour accepter les paiements sans contact.",
+        "ITSAppUsesNonExemptEncryption": false
       },
-      "entitlements": {
-        "com.apple.developer.proximity-reader.payment.acceptance": true
-      }
+      "entitlements": {}
     },
     "android": {
       "package": "fr.bopay.app",
