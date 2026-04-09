@@ -28,7 +28,7 @@ import { Device } from './database/entities/device.entity';
         entities: [Merchant, MerchantUser, Payment, Customer, Device],
         synchronize: config.get('NODE_ENV') !== 'production',
         logging: config.get('NODE_ENV') !== 'production',
-        ssl: config.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
+        ssl: config.get('NODE_ENV') === 'production' ? { rejectUnauthorized: true } : false,
       }),
       inject: [ConfigService],
     }),
